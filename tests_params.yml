@@ -1,0 +1,57 @@
+angular_difference:
+    rounds: 1000
+    csv_file: tests/angular_difference.csv
+    model_dir: saved_models
+    model_name: mcd_attitude_estimator
+    observations:
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+    dropout:
+        - 10
+        - 15
+        - 20
+
+dropout_evolution:
+    rounds: 1000
+    test_case: 8
+    csv_file: tests/dropout_evolution.csv
+    model_dir: saved_models
+    model_name: mcd_attitude_estimator
+    observation: 3
+    dropout:
+        - 10
+        - 15
+        - 20      
+
+test_scenarios:
+    algorithms:
+        - nn
+        - svd
+        - quest
+        - q_method
+        - esoq2
+    model_dir: saved_models/mcd_attitude_estimator_3_20
+    samples: 4000
+    iterations: 0
+    performance: False
+    save_csv: True
+    csv_file: tests/test_scenarios.csv
+
+uncertainty_test:
+    model_dir: saved_models
+    model_name: mcd_attitude_estimator
+    csv_file: tests/uncertainty_test.csv
+    rounds: 1000
+    observations:
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+    dropout:
+        - 10
+        - 15
+        - 20

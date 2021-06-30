@@ -1,0 +1,39 @@
+project_name: pose_estimation
+group_name: null
+model_dir: saved_models
+save_architecture: True
+allow_resume: False
+display_summary: True
+
+# Anchors
+batch_size: &batch_size 10
+num_points: &num_points 50
+architecture: &architecture rotation_continuity
+parametrization: &parametrization dcm
+distance: &distance geodesic
+
+model_name: !join [*architecture, "_", *parametrization, "_", *num_points]
+
+dataset_params:
+    handler: point_loader
+    dataset_path: datasets/shapenet/points
+    # dataset_path: datasets/shapenet/points_test
+    val_ratio: 0.04
+    test_ratio: 0.3
+    num_points: *num_points
+    num_rotations: *batch_size
+    parametrization: *parametrization
+
+train_params:
+    metrics:
+        - !join [*distance, "_error"]
+
+    loss: !join [*distance, "_loss"]
+
+    monitor: !join ["val_", *distance, "_error"]
+
+    epochs: 2000
+
+    hyperparams:
+        batch_size: *batch_size
+        parametrization: *parametrization

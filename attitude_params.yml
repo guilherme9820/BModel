@@ -1,0 +1,41 @@
+project_name: attitude_determination
+group_name: null
+model_dir: saved_models
+save_architecture: True
+allow_resume: False
+display_summary: False
+
+# Anchors
+batch_size: &batch_size 32
+observations: &observations 3
+mcd_rate: &mcd_rate 0.2
+architecture: &architecture mcd_attitude_estimator
+
+model_name: !join [*architecture, "_", *observations, "_", !multiply [*mcd_rate, 100]]
+
+dataset_params:
+    handler: attitude_dataset
+    val_ratio: 0.04
+    test_ratio: 0.3
+    batch_size: *batch_size
+    num_samples: 8192
+    num_observations: *observations
+    add_noise: False
+    std_range:
+        - 1.0e-6
+        - 0.01
+
+train_params:
+    metrics:
+        - wahba_error
+        - geodesic_error
+
+    loss: geodesic_loss
+
+    monitor: val_wahba_error
+
+    epochs: 2000
+
+    hyperparams:
+        batch_size: *batch_size
+        mcd_rate: *mcd_rate
