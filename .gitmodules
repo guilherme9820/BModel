@@ -1,3 +1,6 @@
 [submodule "Tenning"]
 	path = Tenning
 	url = https://github.com/guilherme9820/Tenning.git
+[submodule "AttitudeDetermination"]
+	path = AttitudeDetermination
+	url = https://github.com/guilherme9820/AttitudeDetermination.git
