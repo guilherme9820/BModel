@@ -1,3 +1,5 @@
+# One should use this script if one wants to train a model for the pose estimation task
+
 project_name: pose_estimation
 group_name: null
 model_dir: saved_models
@@ -23,6 +25,8 @@ dataset_params:
     num_points: *num_points
     num_rotations: *batch_size
     parametrization: *parametrization
+    min_angle: -180
+    max_angle: 180
 
 train_params:
     metrics:

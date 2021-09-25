@@ -16,15 +16,21 @@ class AttitudeDataset(IteratorBuilder):
     def __init__(self,
                  num_samples=2**13,
                  num_observations=4,
+                 min_angle=-180,
+                 max_angle=180,
                  add_noise=False,
                  std_range=None,
+                 parametrization='dcm',
                  **kwargs):
         super().__init__(**kwargs)
 
         self.obs = num_observations
         self.num_samples = num_samples
         self.add_noise = add_noise
+        self.min_angle = min_angle
+        self.max_angle = max_angle
         self.std_range = std_range or [1e-6, 0.01]
+        self.parametrization = parametrization
 
         self.gen_data()
 
@@ -32,10 +38,20 @@ class AttitudeDataset(IteratorBuilder):
 
         ref_vectors = gen_boresight_vector(self.num_samples, self.obs, 15)
 
-        attitudes = gen_random_dcm(self.num_samples).numpy()
+        if self.parametrization == 'dcm':
+            attitudes = gen_random_dcm(self.num_samples,
+                                       min_angle=self.min_angle,
+                                       max_angle=self.max_angle,
+                                       unit='deg').numpy()
+        else:
+            attitudes = gen_rot_quaternion(self.num_samples,
+                                           min_angle=self.min_angle,
+                                           max_angle=self.max_angle,
+                                           unit='deg').numpy()
 
-        body_vectors = attitudes @ np.transpose(ref_vectors, [0, 2, 1])
-        body_vectors = np.transpose(body_vectors, [0, 2, 1])
+        # body_vectors = attitudes @ np.transpose(ref_vectors, [0, 2, 1])
+        # body_vectors = np.transpose(body_vectors, [0, 2, 1])
+        body_vectors = rotate_vector(attitudes, ref_vectors, self.parametrization)
 
         def gen_noise(stds):
 
@@ -49,6 +65,7 @@ class AttitudeDataset(IteratorBuilder):
             return noise
 
         # Selects standard deviation values from a given range
+        # stds = np.random.uniform(-6, -2, size=(self.num_samples, self.obs))
         stds = np.random.uniform(self.std_range[0], self.std_range[1], size=(self.num_samples, self.obs))
 
         if self.add_noise:
@@ -58,6 +75,9 @@ class AttitudeDataset(IteratorBuilder):
             body_vectors += noise
 
         stds = np.tile(stds[..., np.newaxis], [1, 1, 3])
+
+        if self.parametrization == 'quaternion':
+            attitudes = tf.tile(attitudes[..., tf.newaxis], [1, 1, 3])
 
         dataset = tf.concat([ref_vectors, body_vectors, stds, attitudes], axis=1)  # (samples, 13, 3)
 
@@ -71,7 +91,10 @@ class AttitudeDataset(IteratorBuilder):
 
         stds = tf.cast(data[:, (2*self.obs):(3*self.obs), 0], tf.float32)  # (batch, observations)
 
-        true_rotation = tf.cast(data[:, (3*self.obs):, :], tf.float32)  # (batch, 3, 3)
+        if self.parametrization == 'dcm':
+            true_rotation = tf.cast(data[:, (3*self.obs):, :], tf.float32)  # (batch, 3, 3)
+        else:
+            true_rotation = tf.cast(data[:, (3*self.obs):, 0], tf.float32)  # (batch, 4)
 
         return body_vectors, ref_vectors, stds, true_rotation
 
@@ -90,6 +113,8 @@ class PointLoader(IteratorBuilder):
                  num_points=50,
                  num_rotations=10,
                  parametrization='dcm',
+                 min_angle=-180,
+                 max_angle=180,
                  **kwargs):
 
         # It will load a single .pts file at a time
@@ -100,6 +125,8 @@ class PointLoader(IteratorBuilder):
         self.dataset_path = dataset_path
         self.parametrization = parametrization
         self.num_rotations = num_rotations
+        self.min_angle = min_angle
+        self.max_angle = max_angle
 
         point_files = np.array(os.listdir(dataset_path))
 
@@ -129,7 +156,9 @@ class PointLoader(IteratorBuilder):
 
         # Selects 'num_points' random point clouds
         pc_indices = tf.range(tf.shape(point_clouds)[0])[:, tf.newaxis]
-        pc_indices = tf.random.shuffle(pc_indices)[:self.num_points]
+
+        if self.num_points > 0:
+            pc_indices = tf.random.shuffle(pc_indices)[:self.num_points]
 
         point_clouds = tf.gather_nd(point_clouds, pc_indices)
 
@@ -144,10 +173,16 @@ class PointLoader(IteratorBuilder):
 
         if self.parametrization == 'dcm':
             # (batch, 3, 3)
-            random_rotations = gen_random_dcm(self.num_rotations)
+            random_rotations = gen_random_dcm(self.num_rotations,
+                                              min_angle=self.min_angle,
+                                              max_angle=self.max_angle,
+                                              unit='deg')
         else:
             # (batch, 4)
-            random_rotations = gen_rot_quaternion(self.num_rotations)
+            random_rotations = gen_rot_quaternion(self.num_rotations,
+                                                  min_angle=self.min_angle,
+                                                  max_angle=self.max_angle,
+                                                  unit='deg')
 
         target_points = rotate_vector(random_rotations, original_points, self.parametrization)
 
@@ -164,7 +199,9 @@ def get_handler(params):
                                    num_rotations=params["num_rotations"],
                                    parametrization=params["parametrization"],
                                    val_ratio=params["val_ratio"],
-                                   test_ratio=params["test_ratio"])
+                                   test_ratio=params["test_ratio"],
+                                   min_angle=params["min_angle"],
+                                   max_angle=params["max_angle"])
 
     else:
         data_handler = AttitudeDataset(num_samples=params["num_samples"],
@@ -173,7 +210,10 @@ def get_handler(params):
                                        std_range=params["std_range"],
                                        val_ratio=params["val_ratio"],
                                        test_ratio=params["test_ratio"],
-                                       batch_size=params["batch_size"])
+                                       batch_size=params["batch_size"],
+                                       min_angle=params["min_angle"],
+                                       max_angle=params["max_angle"],
+                                       parametrization=params["parametrization"])
 
     return data_handler
 
