@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 sns.set()
 paper_rc = {'lines.markersize': 15}
-sns.set_context("paper", rc=paper_rc)
+sns.set(style='ticks', context='talk', rc=paper_rc)
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.weight'] = 'normal'
 

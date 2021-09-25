@@ -36,7 +36,7 @@ def plot_var(axes, data, font_size=12):
     plt.tight_layout()
 
 
-sns.set()
+sns.set(style='ticks', context='talk')
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.weight'] = 'normal'
 

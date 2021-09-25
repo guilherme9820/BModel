@@ -4,7 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
-sns.set()
+sns.set(style='ticks', context='talk')
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.weight'] = 'normal'
 

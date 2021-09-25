@@ -75,7 +75,7 @@ def evaluate(algorithm,
         if not os.path.exists(csv_file):
             results.to_csv(csv_file, index=False)
 
-        data = [test_case, algorithm, mean_angle, mean_loss]
+        data = [f"case{test_case}", algorithm, mean_angle, mean_loss]
 
         results.loc[0] = data
 
